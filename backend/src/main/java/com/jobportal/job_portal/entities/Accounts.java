@@ -14,7 +14,6 @@ public class Accounts {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long accountId;
-    private String name;
     @Column(unique=true,nullable=false)
     private String email;
     private String password;
@@ -32,12 +31,7 @@ public class Accounts {
     public Long getAccountId(){
         return accountId;
     }
-    public String getName(){
-        return name;
-    }
-    public void setName(String name){
-        this.name=name;
-    }
+
      public String getEmail(){
         return email;
     }
