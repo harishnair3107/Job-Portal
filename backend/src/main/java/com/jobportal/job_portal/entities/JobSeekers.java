@@ -12,6 +12,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity 
 public class JobSeekers {
     @Id 
@@ -36,9 +38,12 @@ public class JobSeekers {
         cascade = CascadeType.ALL,
         orphanRemoval = true
     )
+    @JsonIgnore
     private List<Applications> appliedPosting = new ArrayList<>();
+    
     @OneToOne
     @JoinColumn(name = "account_id", unique = true, nullable = false)
+    @JsonIgnore
     private Accounts account;
     
 

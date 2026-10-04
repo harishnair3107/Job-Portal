@@ -1,8 +1,15 @@
 import React from 'react';
-import { Briefcase, Globe, User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Briefcase, Globe, User, LogOut } from 'lucide-react';
 import './Navbar.css';
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
   return (
     <nav className="navbar">
       <div className="navbar-left">
@@ -14,10 +21,7 @@ const Navbar = () => {
         </div>
         <div className="divider"></div>
         <div className="nav-links">
-          <a href="#">Find Jobs</a>
-          <a href="#">For Employers</a>
-          <a href="#">Career Advice</a>
-          <a href="#">Pricing</a>
+          {/* Links moved to dashboard as requested */}
         </div>
       </div>
       
@@ -29,14 +33,17 @@ const Navbar = () => {
             <path d="M6 9l6 6 6-6"/>
           </svg>
         </button>
-        <button className="back-home">
+        <button className="back-home" onClick={() => navigate('/job-seeker/dashboard')}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          Back to Home
+          Dashboard
         </button>
-        <button className="profile-btn">
+        <button className="profile-btn" onClick={() => navigate('/job-seeker/profile')}>
           <User size={18} />
+        </button>
+        <button className="profile-btn" onClick={handleLogout} style={{ marginLeft: '10px', backgroundColor: '#fee2e2', color: '#ef4444' }}>
+          <LogOut size={18} />
         </button>
       </div>
     </nav>

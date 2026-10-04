@@ -11,6 +11,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Company {
     @Id
@@ -33,6 +35,7 @@ public class Company {
         cascade = CascadeType.ALL,
         orphanRemoval = true
     )
+    @JsonIgnore
     private List<Recruiters> recruiters = new ArrayList<>();
 
     @OneToMany(
@@ -40,6 +43,7 @@ public class Company {
         cascade = CascadeType.ALL,
         orphanRemoval = true
     )
+    @JsonIgnore
     private List<Posting> postings = new ArrayList<>();
 
     public Long getCompanyId() {

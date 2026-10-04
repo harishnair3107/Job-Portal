@@ -15,19 +15,23 @@ import com.jobportal.job_portal.repositories.AccountRepository;
 import com.jobportal.job_portal.repositories.CompanyRepository;
 import com.jobportal.job_portal.repositories.JobSeekerRepository;
 import com.jobportal.job_portal.repositories.RecruiterRepository;
+import com.jobportal.job_portal.security.JwtUtil;
 @Service 
 public class AuthService {
     private final AccountRepository accountRepository;
-    private  final JobSeekerRepository jobSeekerRepository;
+    private final JobSeekerRepository jobSeekerRepository;
     private final RecruiterRepository recruiterRepository;
     private final PasswordEncoder passwordEncoder;
-    private  final CompanyRepository companyRepository;
-    public AuthService(AccountRepository accountRepository,JobSeekerRepository jobSeekerRepository,RecruiterRepository recruiterRepository , PasswordEncoder passwordEncoder,CompanyRepository companyRepository){
+    private final CompanyRepository companyRepository;
+    private final JwtUtil jwtUtil;
+
+    public AuthService(AccountRepository accountRepository,JobSeekerRepository jobSeekerRepository,RecruiterRepository recruiterRepository , PasswordEncoder passwordEncoder,CompanyRepository companyRepository, JwtUtil jwtUtil){
         this.accountRepository=accountRepository;
         this.jobSeekerRepository=jobSeekerRepository;
         this.recruiterRepository=recruiterRepository;
         this.passwordEncoder=passwordEncoder;
         this.companyRepository=companyRepository;
+        this.jwtUtil=jwtUtil;
     }
     @Transactional 
     public void registerJobSeeker(JobSeekerRegisterRequest jobSeekerRegisterRequest){
@@ -64,4 +68,14 @@ public class AuthService {
         recruiterRepository.save(recruiter);
     }
     
+    public String login(String email, String password) {
+        Accounts account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                
+        if (!passwordEncoder.matches(password, account.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
+        }
+        
+        return jwtUtil.generateToken(account.getEmail(), account.getAccountType().name());
+    }
 }

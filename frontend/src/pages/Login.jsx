@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, Lock, FastForward, Star, 
   ShieldCheck, CheckCircle2, Mail, Eye, EyeOff, ExternalLink, User, Building
@@ -6,6 +7,7 @@ import {
 import './Login.css';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [profileMode, setProfileMode] = useState('job-seeker');
   const [authMode, setAuthMode] = useState('signin');
   const [name, setName] = useState('');
@@ -20,11 +22,16 @@ const Login = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Clear messages when switching tabs
+  // Clear messages and input fields when switching tabs
   const handleAuthModeSwitch = (mode) => {
     setAuthMode(mode);
     setErrorMsg('');
     setSuccessMsg('');
+    setName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setCompanyCode('');
   };
 
   useEffect(() => {
@@ -90,8 +97,11 @@ const Login = () => {
         if (response.ok) {
           setSuccessMsg('Registration successful! Please sign in.');
           setAuthMode('signin');
+          setName('');
+          setEmail('');
           setPassword('');
           setConfirmPassword('');
+          setCompanyCode('');
         } else {
           const errorData = await response.json().catch(() => null);
           setErrorMsg(errorData?.message || errorData?.error || 'Registration failed. Please try again.');
@@ -116,7 +126,12 @@ const Login = () => {
             localStorage.setItem('token', data.token);
           }
           setSuccessMsg('Sign in successful!');
-          // You can add router navigation here
+          // Redirect based on profile mode (since backend doesn't return role yet)
+          if (profileMode === 'recruiter') {
+            navigate('/recruiter/dashboard');
+          } else {
+            navigate('/job-seeker/dashboard');
+          }
         } else {
           const errorData = await response.json().catch(() => null);
           setErrorMsg(errorData?.message || errorData?.error || 'Invalid credentials');

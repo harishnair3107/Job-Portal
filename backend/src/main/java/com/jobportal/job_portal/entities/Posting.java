@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity 
 public class Posting {
     @Id 
@@ -26,6 +28,7 @@ public class Posting {
         cascade = CascadeType.ALL,
         orphanRemoval = true
     )
+    @JsonIgnore
     private List<Applications> postingApplications= new ArrayList<>();
 
     public List<Applications> getPostingApplications() {
