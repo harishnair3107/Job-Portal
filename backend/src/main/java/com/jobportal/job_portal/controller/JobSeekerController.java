@@ -10,7 +10,11 @@ import com.jobportal.job_portal.entities.Accounts;
 import com.jobportal.job_portal.repositories.JobSeekerRepository;
 import com.jobportal.job_portal.repositories.AccountRepository;
 import com.jobportal.job_portal.security.JwtUtil;
-
+import org.springframework.web.multipart.MultipartFile;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.jobportal.job_portal.entities.Education;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -54,10 +58,13 @@ public class JobSeekerController {
         return ResponseEntity.notFound().build();
     }
 
-    @PutMapping("/me")
+    @PutMapping(value = "/me", consumes = {"multipart/form-data", "application/json"})
     public ResponseEntity<?> updateProfile(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestBody Map<String, String> payload) {
+            @RequestParam(value = "profileSummary", required = false) String profileSummary,
+            @RequestParam(value = "educationList", required = false) String educationListJson,
+            @RequestParam(value = "resume", required = false) MultipartFile resume,
+            @RequestParam(value = "profilePic", required = false) MultipartFile profilePic) {
         
         Accounts account = getAccountFromToken(authHeader);
         if (account == null) return ResponseEntity.status(401).body("Unauthorized");
@@ -65,8 +72,37 @@ public class JobSeekerController {
         Optional<JobSeekers> jsOpt = jobSeekerRepository.findByAccount(account);
         if (jsOpt.isPresent()) {
             JobSeekers jobSeeker = jsOpt.get();
-            if (payload.containsKey("name")) jobSeeker.setName(payload.get("name"));
-            if (payload.containsKey("profileSummary")) jobSeeker.setProfileSummary(payload.get("profileSummary"));
+            
+            if (profileSummary != null) {
+                jobSeeker.setProfileSummary(profileSummary);
+            }
+            
+            if (educationListJson != null && !educationListJson.isEmpty()) {
+                try {
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+                    List<Education> eduList = mapper.readValue(educationListJson, new TypeReference<List<Education>>(){});
+                    // clear and add to maintain persistence linkage
+                    jobSeeker.getEducationList().clear();
+                    for(Education edu : eduList) {
+                        edu.setJobseeker(jobSeeker);
+                        jobSeeker.getEducationList().add(edu);
+                    }
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            
+            try {
+                if (resume != null && !resume.isEmpty()) {
+                    jobSeeker.setResume(resume.getBytes());
+                }
+                if (profilePic != null && !profilePic.isEmpty()) {
+                    jobSeeker.setProfilePic(profilePic.getBytes());
+                }
+            } catch(Exception e) {
+                return ResponseEntity.status(500).body("Error processing files");
+            }
             
             jobSeekerRepository.save(jobSeeker);
             return ResponseEntity.ok(jobSeeker);

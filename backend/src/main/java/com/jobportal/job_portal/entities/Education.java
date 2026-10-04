@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity 
 public class Education {
@@ -21,6 +22,7 @@ public class Education {
     private Double percentage;
     @ManyToOne 
     @JoinColumn(name="job_seeker_id")
+    @JsonIgnore
     private JobSeekers jobseeker;
 
     public Long getEducationId() {

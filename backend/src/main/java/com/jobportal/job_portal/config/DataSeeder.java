@@ -9,9 +9,17 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.jobportal.job_portal.entities.Accounts;
+import com.jobportal.job_portal.entities.AccountType;
+import com.jobportal.job_portal.entities.Recruiters;
+import com.jobportal.job_portal.entities.Status;
+import com.jobportal.job_portal.repositories.AccountRepository;
+import com.jobportal.job_portal.repositories.RecruiterRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.time.LocalDateTime;
 
 @Component
 public class DataSeeder implements CommandLineRunner {
@@ -21,6 +29,15 @@ public class DataSeeder implements CommandLineRunner {
 
     @Autowired
     private PostingRepository postingRepository;
+
+    @Autowired
+    private AccountRepository accountRepository;
+
+    @Autowired
+    private RecruiterRepository recruiterRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -96,12 +113,32 @@ public class DataSeeder implements CommandLineRunner {
                 posting.setRole(randomRole);
                 posting.setJobRequirement(randomReqs);
                 posting.setJobDescription(randomDesc);
+                posting.setSalary(100000.0 + random.nextInt(150000));
                 posting.setCompany(randomCompany);
                 postings.add(posting);
             }
 
             postingRepository.saveAll(postings);
             System.out.println("Successfully seeded " + savedCompanies.size() + " companies and " + postings.size() + " job postings.");
+        }
+
+        if (accountRepository.findByEmail("recruiter@test.com").isEmpty()) {
+            Accounts account = new Accounts();
+            account.setEmail("recruiter@test.com");
+            account.setPassword(passwordEncoder.encode("password123"));
+            account.setAccountType(AccountType.RECRUITERS);
+            account.setStatus(Status.ACTIVE);
+            account = accountRepository.save(account);
+
+            Recruiters recruiter = new Recruiters();
+            recruiter.setName("Test Recruiter");
+            // Just use the first company if it exists, otherwise create a dummy
+            if (companyRepository.count() > 0) {
+                recruiter.setCompany(companyRepository.findAll().get(0));
+            }
+            recruiter.setAccount(account);
+            recruiterRepository.save(recruiter);
+            System.out.println("Seeded test recruiter: recruiter@test.com / password123");
         }
     }
 }

@@ -124,13 +124,21 @@ const Login = () => {
           const data = await response.json();
           if (data.token) {
             localStorage.setItem('token', data.token);
-          }
-          setSuccessMsg('Sign in successful!');
-          // Redirect based on profile mode (since backend doesn't return role yet)
-          if (profileMode === 'recruiter') {
-            navigate('/recruiter/dashboard');
-          } else {
-            navigate('/job-seeker/dashboard');
+            try {
+              const payloadBase64 = data.token.split('.')[1];
+              const decoded = JSON.parse(atob(payloadBase64));
+              const role = decoded.role;
+              setSuccessMsg('Sign in successful!');
+              
+              if (role === 'RECRUITERS') {
+                navigate('/recruiter/dashboard');
+              } else {
+                navigate('/job-seeker/dashboard');
+              }
+            } catch (e) {
+              setSuccessMsg('Sign in successful!');
+              navigate('/job-seeker/dashboard');
+            }
           }
         } else {
           const errorData = await response.json().catch(() => null);

@@ -20,6 +20,7 @@ public class Posting {
     private String Role;
     private String jobRequirement;
     private String jobDescription;
+    private Double salary;
     @ManyToOne 
     @JoinColumn(name="company_id")
     private Company company;
@@ -69,6 +70,14 @@ public class Posting {
 
     public void setJobDescription(String jobDescription) {
         this.jobDescription = jobDescription;
+    }
+
+    public Double getSalary() {
+        return salary;
+    }
+
+    public void setSalary(Double salary) {
+        this.salary = salary;
     }
 
     public Company getCompany() {

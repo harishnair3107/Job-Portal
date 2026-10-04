@@ -7,6 +7,8 @@ const RecruiterDashboard = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [recruiterInfo, setRecruiterInfo] = useState(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -19,15 +21,24 @@ const RecruiterDashboard = () => {
         if (res.ok) {
           const apps = await res.json();
           setApplications(apps);
-          
-          // Derive unique jobs from applications
-          const jobsMap = new Map();
-          apps.forEach(app => {
-            if (app.posting && !jobsMap.has(app.posting.postingId)) {
-              jobsMap.set(app.posting.postingId, app.posting);
-            }
-          });
-          setActiveJobs(Array.from(jobsMap.values()));
+        }
+        
+        // Fetch recruiter info
+        const recRes = await fetch('http://localhost:8080/api/recruiters/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (recRes.ok) {
+          const recData = await recRes.json();
+          setRecruiterInfo(recData);
+        }
+        
+        // Fetch active jobs from company directly
+        const jobsRes = await fetch('http://localhost:8080/api/postings/company', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (jobsRes.ok) {
+          const jobsData = await jobsRes.json();
+          setActiveJobs(jobsData);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -57,16 +68,79 @@ const RecruiterDashboard = () => {
     }
   };
 
+  const [isPostingJob, setIsPostingJob] = useState(false);
+  const [newJob, setNewJob] = useState({ role: '', jobDescription: '', jobRequirement: '', salary: '' });
+
+  const handlePostJob = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:8080/api/postings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newJob)
+      });
+      if (res.ok) {
+        const postedJob = await res.json();
+        setActiveJobs([postedJob, ...activeJobs]);
+        setIsPostingJob(false);
+        setNewJob({ role: '', jobDescription: '', jobRequirement: '', salary: '' });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsUploadingLogo(true);
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('logo', file);
+    try {
+      const res = await fetch('http://localhost:8080/api/recruiters/me/company/logo', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      if (res.ok) {
+        const updatedCompany = await res.json();
+        setRecruiterInfo({...recruiterInfo, company: updatedCompany});
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
   return (
     <div className="dashboard-container">
-      <div className="dashboard-header">
-        <div className="dashboard-title">
-          <h1>Enterprise Talent Acquisition</h1>
-          <p>Q1 Sourcing Portal • High-affinity technical search and pipeline progression</p>
+      <div className="dashboard-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        {recruiterInfo?.company?.logo ? (
+          <div style={{ width: '60px', height: '60px', borderRadius: '8px', backgroundImage: `url(data:image/jpeg;base64,${recruiterInfo.company.logo})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+        ) : (
+          <div style={{ width: '60px', height: '60px', borderRadius: '8px', backgroundColor: 'var(--primary-blue-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-blue)', fontWeight: 'bold' }}>
+            {recruiterInfo?.company?.companyName?.charAt(0) || 'C'}
+          </div>
+        )}
+        <div className="dashboard-title" style={{ flex: 1 }}>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {recruiterInfo?.company?.companyName || 'Enterprise'} Talent Acquisition
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, backgroundColor: 'var(--bg-card)', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', cursor: 'pointer' }}>
+              {isUploadingLogo ? 'Uploading...' : 'Update Logo'}
+              <input type="file" style={{ display: 'none' }} accept="image/*" onChange={handleLogoUpload} disabled={isUploadingLogo} />
+            </label>
+          </h1>
+          <p>Welcome back, {recruiterInfo?.name || 'Recruiter'} • Q1 Sourcing Portal</p>
         </div>
         <div className="header-actions">
           <button className="btn-outline">Export Pipeline (CSV)</button>
-          <button className="btn-primary"><Plus size={16}/> Post a New Job</button>
+          <button className="btn-primary" onClick={() => setIsPostingJob(true)}><Plus size={16}/> Post a New Job</button>
         </div>
       </div>
 
@@ -82,19 +156,19 @@ const RecruiterDashboard = () => {
         
         <div className="metric-card">
           <div className="metric-title">
-            <span>Total Sourced</span>
+            <span>Total Postings</span>
             <Users size={16} />
           </div>
-          <div className="metric-value">1,420 <span className="metric-sub positive">+34 today</span></div>
+          <div className="metric-value">{activeJobs.length} <span className="metric-sub positive">Roles Published</span></div>
         </div>
 
         <div className="metric-card">
           <div className="metric-title">
-            <span>In Active Pipeline</span>
+            <span>Total Applicants</span>
             <UserPlus size={16} />
           </div>
-          <div className="metric-value">86 <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>candidates</span></div>
-          <div className="metric-sub" style={{ marginTop: '0.5rem' }}>32 in Technical Screen</div>
+          <div className="metric-value">{applications.length} <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>candidates</span></div>
+          <div className="metric-sub" style={{ marginTop: '0.5rem' }}>Pipeline Sourced</div>
         </div>
 
         <div className="metric-card">
@@ -223,6 +297,36 @@ const RecruiterDashboard = () => {
                 <ExternalLink size={14}/> View Attached Resume
               </a>
             )}
+          </div>
+        </div>
+      )}
+
+      {isPostingJob && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '2rem', width: '90%', maxWidth: '500px', position: 'relative' }}>
+            <button onClick={() => setIsPostingJob(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+              <X size={24} color="var(--text-secondary)" />
+            </button>
+            <h2 style={{ margin: '0 0 1rem 0' }}>Post a New Job</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Role Title</label>
+                <input type="text" className="custom-input" value={newJob.role} onChange={(e) => setNewJob({...newJob, role: e.target.value})} placeholder="e.g. Senior Software Engineer" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}/>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Salary (Annual USD)</label>
+                <input type="number" className="custom-input" value={newJob.salary} onChange={(e) => setNewJob({...newJob, salary: e.target.value})} placeholder="e.g. 150000" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}/>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Job Description</label>
+                <textarea className="custom-textarea" rows="4" value={newJob.jobDescription} onChange={(e) => setNewJob({...newJob, jobDescription: e.target.value})} placeholder="Describe the responsibilities..." style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)', resize: 'vertical' }}></textarea>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Requirements (Comma Separated)</label>
+                <input type="text" className="custom-input" value={newJob.jobRequirement} onChange={(e) => setNewJob({...newJob, jobRequirement: e.target.value})} placeholder="e.g. React, Java, AWS" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}/>
+              </div>
+              <button className="btn-primary" onClick={handlePostJob} style={{ width: '100%', justifyContent: 'center', padding: '0.75rem', marginTop: '1rem' }}>Publish Job</button>
+            </div>
           </div>
         </div>
       )}

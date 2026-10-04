@@ -114,7 +114,7 @@ const JobSeekerDashboard = () => {
                     </div>
                   </div>
                   <div className="salary-range">
-                    $250k - $300k <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 400 }}>+ Equity</span>
+                    {posting.salary ? `$${posting.salary.toLocaleString()}` : 'Competitive Salary'} <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 400 }}>+ Equity</span>
                   </div>
                   <ul style={{ paddingLeft: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                     <li>{posting.jobDescription}</li>

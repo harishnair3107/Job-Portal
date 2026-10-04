@@ -13,8 +13,11 @@ const CompleteProfile = () => {
     profileSummary: '',
     profilePic: null,
     resume: null,
-    educationList: []
+    educationList: [],
+    profilePicBase64: null,
+    resumeExists: false
   });
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -30,7 +33,9 @@ const CompleteProfile = () => {
           setFormData(prev => ({
             ...prev,
             profileSummary: data.profileSummary || '',
-            educationList: data.educationList || []
+            educationList: data.educationList || [],
+            profilePicBase64: data.profilePic || null,
+            resumeExists: data.resume ? true : false
           }));
         }
       } catch (err) {
@@ -80,30 +85,49 @@ const CompleteProfile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
+    const formDataToSend = new FormData();
+    formDataToSend.append('profileSummary', formData.profileSummary);
+    formDataToSend.append('educationList', JSON.stringify(formData.educationList));
+    if (formData.profilePic) formDataToSend.append('profilePic', formData.profilePic);
+    if (formData.resume) formDataToSend.append('resume', formData.resume);
+
     try {
       const res = await fetch('http://localhost:8080/api/job-seekers/me', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          profileSummary: formData.profileSummary
-        })
+        body: formDataToSend
       });
+      
+      const responseData = await res.text();
+      
       if (res.ok) {
-        alert("Profile saved successfully!");
+        setNotification({ type: 'success', message: 'Profile saved successfully!' });
+        setTimeout(() => setNotification(null), 3000);
       } else {
-        alert("Failed to save profile.");
+        setNotification({ type: 'error', message: `Failed to save profile: ${responseData}` });
+        setTimeout(() => setNotification(null), 5000);
       }
     } catch (err) {
       console.error(err);
-      alert("Error saving profile.");
+      setNotification({ type: 'error', message: `Error saving profile: ${err.message}` });
+      setTimeout(() => setNotification(null), 5000);
     }
   };
 
   return (
     <div className="dashboard-container">
+      {notification && (
+        <div style={{
+          position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+          backgroundColor: notification.type === 'success' ? '#10b981' : '#ef4444',
+          color: 'white', padding: '1rem 2rem', borderRadius: '8px', zIndex: 9999,
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', fontWeight: 600
+        }}>
+          {notification.message}
+        </div>
+      )}
       
       {/* Top Header */}
       <div className="profile-header">
@@ -150,6 +174,8 @@ const CompleteProfile = () => {
               <div className="avatar-upload">
                 {formData.profilePic ? (
                   <div className="avatar-preview" style={{ backgroundImage: `url(${URL.createObjectURL(formData.profilePic)})` }}></div>
+                ) : formData.profilePicBase64 ? (
+                  <div className="avatar-preview" style={{ backgroundImage: `url(data:image/jpeg;base64,${formData.profilePicBase64})` }}></div>
                 ) : (
                   <div className="avatar-placeholder"><User size={40} color="#cbd5e1" /></div>
                 )}
@@ -276,7 +302,7 @@ const CompleteProfile = () => {
               <span className="badge-success"><CheckCircle2 size={14}/> ATS Synced</span>
             </div>
 
-            {!formData.resume ? (
+            {!formData.resume && !formData.resumeExists ? (
               <div className="drag-drop-zone">
                 <div className="upload-icon-circle"><UploadCloud size={24} color="var(--primary-blue)" /></div>
                 <h4>Drop your updated CV or Resume here, or <label htmlFor="resume-upload" style={{ color: 'var(--primary-blue)', cursor: 'pointer', textDecoration: 'underline' }}>Browse files</label></h4>
@@ -287,10 +313,10 @@ const CompleteProfile = () => {
               <div className="resume-card">
                 <div className="resume-icon"><FileText size={24} color="#ef4444" /></div>
                 <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: '0 0 0.25rem 0' }}>{formData.resume.name}</h4>
+                  <h4 style={{ margin: '0 0 0.25rem 0' }}>{formData.resume ? formData.resume.name : 'Uploaded Resume.pdf'}</h4>
                   <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                     <span className="badge-success" style={{ padding: '0.1rem 0.4rem', fontSize: '0.7rem' }}><CheckCircle2 size={12}/> Parsed Successfully</span>
-                    <span>{(formData.resume.size / (1024*1024)).toFixed(1)} MB</span>
+                    <span>{formData.resume ? (formData.resume.size / (1024*1024)).toFixed(1) : '1.2'} MB</span>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
