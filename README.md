@@ -17,40 +17,20 @@ A modern, full-stack enterprise job portal designed for scalability and user exp
 *(Below are the UI snapshots demonstrating the portal's features)*
 
 ### 1. Dashboard Overview & KPIs
-![Admin Overview](screenshots/media_1790850226955.png)
+![Admin Overview](screenshots/admin_overview.png)
 Provides a high-level view of the entire platform's health including System Uptime, Job Quality, and Recruiter SLAs.
 
 ### 2. Company & Enterprise Management
-![Companies](screenshots/media_1791111573635.png)
+![Companies](screenshots/admin_companies.png)
 A unified view showing live enterprises and the active amount of recruiter seats tied to them.
 
 ### 3. Recruiter Pool Tracking
-![Recruiters](screenshots/media_1791111607971.png)
+![Recruiters](screenshots/admin_recruiters.png)
 Lists all verified recruiters across all enterprises, showing the total volume of postings they've explicitly uploaded.
 
 ### 4. Talent Pool & Job Seekers
-![Talent](screenshots/media_1791114367941.png)
+![Talent](screenshots/admin_jobseekers.png)
 Tracks all registered candidates and monitors how many applications they've initiated.
-
-### 5. Live Market Requisitions
-![Postings](screenshots/media_1791123674137.png)
-A live feed of all active job postings, their associated salaries, and how many candidates have applied.
-
-### 6. Job Posting Workflows
-![Workflows](screenshots/media_1791124462324.png)
-Detailed view into the posting UI workflows.
-
-### 7. Interactive Application Tracking
-![Tracking](screenshots/media_1791125080383.png)
-Status trackers and actionable recruiter tools to push candidates through the hiring pipeline.
-
-### 8. Authentication & Onboarding
-![Auth](screenshots/media_1791125816835.png)
-Secure and modern login/signup screens properly mapped to the correct user roles.
-
-### 9. Dynamic System Tools
-![Tools](screenshots/media_1791126028011.png)
-Dynamic modals and smooth user interfaces for frictionless hiring and applying.
 
 ---
 
