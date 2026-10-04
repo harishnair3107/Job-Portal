@@ -5,12 +5,13 @@ import java.util.List;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
-
+@Entity
 public class Company {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,10 +22,11 @@ public class Company {
     @Lob
     @Column(name= "logo")
     private byte[] logo;
-    
+    @Column(unique = true,nullable=false)
+    private String companyCode;
     private String description;
     private String website;
-    private String location;
+    private String[] location;
 
     @OneToMany(
         mappedBy = "company",
@@ -80,11 +82,11 @@ public class Company {
         this.website = website;
     }
 
-    public String getLocation() {
+    public String[] getLocation() {
         return location;
     }
 
-    public void setLocation(String location) {
+    public void setLocation(String[] location) {
         this.location = location;
     }
 
@@ -102,5 +104,11 @@ public class Company {
 
     public void setPostings(List<Posting> postings) {
         this.postings = postings;
+    }
+    public void setCompanyCode(String companyCode){
+        this.companyCode=companyCode;
+    }
+    public String getCompanyCode(){
+        return companyCode;
     }
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -11,7 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
-
+@Entity 
 public class JobSeekers {
     @Id 
     @GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -25,7 +26,7 @@ public class JobSeekers {
     private byte[] profilePic;
     private String profileSummary;
     @OneToMany(
-    mappedBy = "jobSeeker",
+    mappedBy = "jobseeker",
     cascade = CascadeType.ALL,
     orphanRemoval = true
     )
@@ -35,10 +36,11 @@ public class JobSeekers {
         cascade = CascadeType.ALL,
         orphanRemoval = true
     )
+    private List<Applications> appliedPosting = new ArrayList<>();
     @OneToOne
     @JoinColumn(name = "account_id", unique = true, nullable = false)
     private Accounts account;
-    private List<Applications> appliedPosting = new ArrayList<>();
+    
 
     public List<Applications> getAppliedPosting() {
         return appliedPosting;
@@ -93,5 +95,8 @@ public class JobSeekers {
 
     public void setEducationList(List<Education> educationList) {
         this.educationList = educationList;
+    }
+    public void setAccount(Accounts account){
+        this.account=account;
     }
 }

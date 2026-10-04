@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, Lock, FastForward, Star, 
-  ShieldCheck, CheckCircle2, Mail, Eye, EyeOff, ExternalLink, User
+  ShieldCheck, CheckCircle2, Mail, Eye, EyeOff, ExternalLink, User, Building
 } from 'lucide-react';
 import './Login.css';
 
@@ -12,6 +12,121 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [companyCode, setCompanyCode] = useState('');
+  const [fetchedCompanyName, setFetchedCompanyName] = useState('');
+  const [isFetchingCompany, setIsFetchingCompany] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  // Clear messages when switching tabs
+  const handleAuthModeSwitch = (mode) => {
+    setAuthMode(mode);
+    setErrorMsg('');
+    setSuccessMsg('');
+  };
+
+  useEffect(() => {
+    if (authMode === 'signup' && profileMode === 'recruiter' && companyCode.length >= 3) {
+      const fetchCompany = async () => {
+        setIsFetchingCompany(true);
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+        try {
+          const res = await fetch(`${baseUrl}/companies/code/${companyCode}`);
+          if (res.ok) {
+            const data = await res.json();
+            setFetchedCompanyName(data.companyName);
+          } else {
+            setFetchedCompanyName('');
+          }
+        } catch (err) {
+          setFetchedCompanyName('');
+        }
+        setIsFetchingCompany(false);
+      };
+
+      const timeoutId = setTimeout(fetchCompany, 500);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setFetchedCompanyName('');
+    }
+  }, [companyCode, authMode, profileMode]);
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    
+    if (authMode === 'signup') {
+      if (password !== confirmPassword) {
+        setErrorMsg("Passwords do not match");
+        return;
+      }
+
+      const endpoint = profileMode === 'recruiter' ? '/auth/register/recruiter' : '/auth/register/job-seeker';
+      
+      const payload = {
+        name,
+        email,
+        password,
+      };
+
+      if (profileMode === 'recruiter') {
+        payload.companyCode = companyCode;
+      }
+
+      try {
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          setSuccessMsg('Registration successful! Please sign in.');
+          setAuthMode('signin');
+          setPassword('');
+          setConfirmPassword('');
+        } else {
+          const errorData = await response.json().catch(() => null);
+          setErrorMsg(errorData?.message || errorData?.error || 'Registration failed. Please try again.');
+        }
+      } catch (error) {
+        console.error("Error during registration:", error);
+        setErrorMsg("An error occurred during registration. Please check your connection.");
+      }
+    } else {
+      try {
+        const response = await fetch(`${baseUrl}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+          }
+          setSuccessMsg('Sign in successful!');
+          // You can add router navigation here
+        } else {
+          const errorData = await response.json().catch(() => null);
+          setErrorMsg(errorData?.message || errorData?.error || 'Invalid credentials');
+        }
+      } catch (error) {
+        console.error("Error during sign in:", error);
+        setErrorMsg("An error occurred during sign in. Please check your connection.");
+      }
+    }
+  };
 
   return (
     <div className="login-container">
@@ -122,17 +237,31 @@ const Login = () => {
             <div className="auth-tabs">
               <button 
                 className={`auth-tab ${authMode === 'signin' ? 'active' : ''}`}
-                onClick={() => setAuthMode('signin')}
+                onClick={() => handleAuthModeSwitch('signin')}
               >
                 Sign In
               </button>
               <button 
                 className={`auth-tab ${authMode === 'signup' ? 'active' : ''}`}
-                onClick={() => setAuthMode('signup')}
+                onClick={() => handleAuthModeSwitch('signup')}
               >
                 Create Account
               </button>
             </div>
+
+            {errorMsg && (
+              <div className="custom-alert alert-error">
+                <ShieldCheck size={18} />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+            
+            {successMsg && (
+              <div className="custom-alert alert-success">
+                <CheckCircle2 size={18} />
+                <span>{successMsg}</span>
+              </div>
+            )}
 
             <div className="auth-header">
               <h2>{authMode === 'signin' ? 'Welcome back to TalentPulse' : 'Join TalentPulse'}</h2>
@@ -147,10 +276,10 @@ const Login = () => {
                 Job Seeker
               </button>
               <button 
-                className={`toggle-btn ${profileMode === 'employer' ? 'active' : ''}`}
-                onClick={() => setProfileMode('employer')}
+                className={`toggle-btn ${profileMode === 'recruiter' ? 'active' : ''}`}
+                onClick={() => setProfileMode('recruiter')}
               >
-                Employer / Recruiter
+                Recruiter
               </button>
             </div>
 
@@ -173,10 +302,10 @@ const Login = () => {
               <span>or email credentials</span>
             </div>
 
-            <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
+            <form className="auth-form" onSubmit={handleAuthSubmit}>
               {authMode === 'signup' && (
                 <div className="input-group">
-                  <label>Full Name</label>
+                  <label>Full Name *</label>
                   <div className="input-wrapper">
                     <User size={18} className="input-icon" />
                     <input 
@@ -184,13 +313,50 @@ const Login = () => {
                       placeholder="Alex Chen" 
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
               )}
 
+              {authMode === 'signup' && profileMode === 'recruiter' && (
+                <div className="input-group">
+                  <label>Company Code *</label>
+                  <div className="input-wrapper">
+                    <Building size={18} className="input-icon" />
+                    <input 
+                      type="text" 
+                      placeholder="e.g. COMP001" 
+                      value={companyCode}
+                      onChange={(e) => setCompanyCode(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {isFetchingCompany && <small style={{ color: 'var(--text-muted)' }}>Searching...</small>}
+                  {fetchedCompanyName && (
+                    <div className="input-wrapper" style={{ marginTop: '0.5rem' }}>
+                      <Building size={18} className="input-icon" style={{ opacity: 0.5 }} />
+                      <input 
+                        type="text" 
+                        value={fetchedCompanyName}
+                        disabled
+                        style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-muted)' }}
+                      />
+                    </div>
+                  )}
+                  {!isFetchingCompany && companyCode.length >= 3 && !fetchedCompanyName && (
+                    <small style={{ color: 'red' }}>Company not found.</small>
+                  )}
+                </div>
+              )}
+
               <div className="input-group">
-                <label>Work or Personal Email</label>
+                <label>
+                  {authMode === 'signup' 
+                    ? (profileMode === 'recruiter' ? 'Work Email *' : 'Email *') 
+                    : 'Email'
+                  }
+                </label>
                 <div className="input-wrapper">
                   <Mail size={18} className="input-icon" />
                   <input 
@@ -198,14 +364,17 @@ const Login = () => {
                     placeholder="alex.chen@company.com" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    required
                   />
                 </div>
               </div>
 
               <div className="input-group">
                 <div className="password-header">
-                  <label>Password</label>
-                  <a href="#" className="forgot-link">Forgot password?</a>
+                  <label>
+                    {authMode === 'signup' ? 'Password *' : 'Password'}
+                  </label>
+                  {authMode === 'signin' && <a href="#" className="forgot-link">Forgot password?</a>}
                 </div>
                 <div className="input-wrapper">
                   <Lock size={18} className="input-icon" />
@@ -214,6 +383,7 @@ const Login = () => {
                     placeholder="••••••••••••" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    required
                   />
                   <button 
                     type="button" 
@@ -224,6 +394,29 @@ const Login = () => {
                   </button>
                 </div>
               </div>
+
+              {authMode === 'signup' && (
+                <div className="input-group">
+                  <label>Confirm Password *</label>
+                  <div className="input-wrapper">
+                    <Lock size={18} className="input-icon" />
+                    <input 
+                      type={showConfirmPassword ? "text" : "password"} 
+                      placeholder="••••••••••••" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                    <button 
+                      type="button" 
+                      className="eye-btn"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="form-options">
                 <label className="checkbox-label">
@@ -245,9 +438,9 @@ const Login = () => {
 
             <div className="auth-footer">
               {authMode === 'signin' ? (
-                <>Don't have an active account yet? <a href="#" onClick={(e) => { e.preventDefault(); setAuthMode('signup'); }}>Register in 2 minutes</a></>
+                <>Don't have an active account yet? <a href="#" onClick={(e) => { e.preventDefault(); handleAuthModeSwitch('signup'); }}>Register in 2 minutes</a></>
               ) : (
-                <>Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); setAuthMode('signin'); }}>Sign in here</a></>
+                <>Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); handleAuthModeSwitch('signin'); }}>Sign in here</a></>
               )}
             </div>
           </div>

@@ -44,6 +44,12 @@ public class Accounts {
     public void setStatus(Status status){
         this.status=status;
     }
+    public AccountType getAccountType(){
+        return accountType;
+    }
+    public void setAccountType(AccountType accountType){
+        this.accountType=accountType;
+    }
     public String getPassword(){
         return password;
     }
