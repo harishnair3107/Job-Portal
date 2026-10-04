@@ -24,6 +24,9 @@ public class Posting {
     @ManyToOne 
     @JoinColumn(name="company_id")
     private Company company;
+    @ManyToOne 
+    @JoinColumn(name="recruiter_id")
+    private Recruiters recruiter;
     @OneToMany(
         mappedBy = "posting",
         cascade = CascadeType.ALL,
@@ -86,5 +89,13 @@ public class Posting {
 
     public void setCompany(Company company) {
         this.company = company;
+    }
+
+    public Recruiters getRecruiter() {
+        return recruiter;
+    }
+
+    public void setRecruiter(Recruiters recruiter) {
+        this.recruiter = recruiter;
     }
 }

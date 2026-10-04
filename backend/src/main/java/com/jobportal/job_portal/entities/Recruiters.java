@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Entity;
 
@@ -27,6 +28,10 @@ public class Recruiters {
     @ManyToOne
     @JoinColumn(name = "company_id")
     private Company company;
+
+    @OneToMany(mappedBy = "recruiter", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Posting> postings = new ArrayList<>();
 
     private String name;
     private String designation;
@@ -106,5 +111,13 @@ public class Recruiters {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<Posting> getPostings() {
+        return postings;
+    }
+
+    public void setPostings(List<Posting> postings) {
+        this.postings = postings;
     }
 }

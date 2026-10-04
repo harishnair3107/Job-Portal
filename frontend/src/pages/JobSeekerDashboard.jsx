@@ -27,7 +27,7 @@ const JobSeekerDashboard = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       try {
-        const res = await fetch('http://localhost:8080/api/job-seekers/me', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/job-seekers/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -44,7 +44,7 @@ const JobSeekerDashboard = () => {
   useEffect(() => {
     const fetchPostings = async () => {
       try {
-        const res = await fetch('http://localhost:8080/api/postings');
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/postings`);
         if (res.ok) {
           const data = await res.json();
           setPostings(data);
@@ -84,7 +84,7 @@ const JobSeekerDashboard = () => {
                 const token = localStorage.getItem('token');
                 if(!token) return;
                 try {
-                  const res = await fetch('http://localhost:8080/api/applications/me', { headers: { 'Authorization': `Bearer ${token}` }});
+                  const res = await fetch(`${import.meta.env.VITE_API_URL}/api/applications/me`, { headers: { 'Authorization': `Bearer ${token}` }});
                   if(res.ok) setApplications(await res.json());
                 } catch(err) { console.error(err); }
               };

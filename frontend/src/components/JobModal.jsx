@@ -4,18 +4,20 @@ import { getLocationForJob } from '../utils/locationHelper';
 
 const JobModal = ({ job, onClose }) => {
   const [applying, setApplying] = useState(false);
+  const [alertMsg, setAlertMsg] = useState({ text: '', type: '' });
 
   const handleApply = async () => {
     setApplying(true);
+    setAlertMsg({ text: '', type: '' });
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("You must be logged in to apply!");
+      setAlertMsg({ text: "You must be logged in to apply!", type: "error" });
       setApplying(false);
       return;
     }
 
     try {
-      const res = await fetch('http://localhost:8080/api/applications/apply', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/applications/apply`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -25,15 +27,15 @@ const JobModal = ({ job, onClose }) => {
       });
       
       if (res.ok) {
-        alert("Successfully applied for this job!");
-        onClose();
+        setAlertMsg({ text: "Successfully applied for this job!", type: "success" });
+        setTimeout(() => onClose(), 2000);
       } else {
         const errorMsg = await res.text();
-        alert(`Failed to apply: ${errorMsg}`);
+        setAlertMsg({ text: `Failed to apply: ${errorMsg}`, type: "error" });
       }
     } catch (err) {
       console.error(err);
-      alert("An error occurred while applying.");
+      setAlertMsg({ text: "An error occurred while applying.", type: "error" });
     } finally {
       setApplying(false);
     }
@@ -59,6 +61,23 @@ const JobModal = ({ job, onClose }) => {
           <X size={24} color="var(--text-secondary)" />
         </button>
 
+        {alertMsg.text && (
+          <div style={{
+            padding: '1rem',
+            marginBottom: '1rem',
+            borderRadius: '8px',
+            backgroundColor: alertMsg.type === 'success' ? '#dcfce7' : '#fee2e2',
+            color: alertMsg.type === 'success' ? '#166534' : '#991b1b',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 500
+          }}>
+            {alertMsg.type === 'success' ? <CheckCircle2 size={18} /> : <X size={18} />}
+            {alertMsg.text}
+          </div>
+        )}
+
         <h2 style={{ margin: '0 0 1rem 0' }}>{job.role}</h2>
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -71,7 +90,7 @@ const JobModal = ({ job, onClose }) => {
 
         <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
           <h4 style={{ margin: '0 0 0.5rem 0' }}>Salary Range</h4>
-          <p style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary-blue)', fontWeight: 600 }}>$180,000 - $250,000 <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>+ Equity</span></p>
+          <p style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary-blue)', fontWeight: 600 }}>{job.salary ? `$${job.salary.toLocaleString()}` : 'Competitive Salary'} <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>+ Equity</span></p>
         </div>
 
         <div style={{ marginBottom: '1.5rem' }}>

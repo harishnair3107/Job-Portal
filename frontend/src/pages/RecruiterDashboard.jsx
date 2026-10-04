@@ -9,13 +9,14 @@ const RecruiterDashboard = () => {
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [recruiterInfo, setRecruiterInfo] = useState(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [selectedJobFilter, setSelectedJobFilter] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       try {
-        const res = await fetch('http://localhost:8080/api/applications/company', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/applications/company`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -24,7 +25,7 @@ const RecruiterDashboard = () => {
         }
         
         // Fetch recruiter info
-        const recRes = await fetch('http://localhost:8080/api/recruiters/me', {
+        const recRes = await fetch(`${import.meta.env.VITE_API_URL}/api/recruiters/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (recRes.ok) {
@@ -33,7 +34,7 @@ const RecruiterDashboard = () => {
         }
         
         // Fetch active jobs from company directly
-        const jobsRes = await fetch('http://localhost:8080/api/postings/company', {
+        const jobsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/postings/company`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (jobsRes.ok) {
@@ -52,7 +53,7 @@ const RecruiterDashboard = () => {
   const handleStatusUpdate = async (id, status) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8080/api/applications/${id}/status`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/applications/${id}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -75,13 +76,21 @@ const RecruiterDashboard = () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:8080/api/postings', {
+      // Parse salary to number, or omit if empty, to prevent Java deserialization errors
+      const jobData = { ...newJob };
+      if (jobData.salary) {
+        jobData.salary = parseFloat(jobData.salary);
+      } else {
+        jobData.salary = null;
+      }
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/postings`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(newJob)
+        body: JSON.stringify(jobData)
       });
       if (res.ok) {
         const postedJob = await res.json();
@@ -102,7 +111,7 @@ const RecruiterDashboard = () => {
     const formData = new FormData();
     formData.append('logo', file);
     try {
-      const res = await fetch('http://localhost:8080/api/recruiters/me/company/logo', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/recruiters/me/company/logo`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -186,30 +195,43 @@ const RecruiterDashboard = () => {
             <h3>Active Job Postings Manager</h3>
             <div className="section-subtitle">Real-time status of requisition funnels and candidate volume</div>
           </div>
-          <span style={{ fontSize: '0.85rem', color: 'var(--primary-blue)', fontWeight: 600 }}>3 Priority Views</span>
+          {selectedJobFilter && (
+            <button className="btn-outline" onClick={() => setSelectedJobFilter(null)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>Clear Filter</button>
+          )}
         </div>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
           {loading ? (
             <div style={{ padding: '2rem', color: 'var(--text-secondary)' }}>Loading your active requisitions...</div>
+          ) : activeJobs.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: 'var(--text-secondary)' }}>
+              No active postings yet. Click "Post a New Job" to get started!
+            </div>
           ) : (
             activeJobs.map((job, idx) => (
-              <div key={job.postingId} style={{ padding: '1rem', border: `1px solid ${idx === 2 ? '#fecaca' : 'var(--border-color)'}`, borderRadius: '8px', backgroundColor: idx === 2 ? '#fff5f5' : 'white' }}>
-                <div style={{ fontSize: '0.75rem', color: idx === 2 ? '#ef4444' : 'var(--primary-blue)', marginBottom: '0.5rem', fontWeight: 600 }}>
-                  {job.company?.companyName} • {idx === 2 ? 'Urgent Priority' : 'Active'}
+              <div 
+                key={job.postingId} 
+                onClick={() => setSelectedJobFilter(job.postingId)}
+                style={{ 
+                  padding: '1rem', 
+                  border: `1px solid ${selectedJobFilter === job.postingId ? 'var(--primary-blue)' : 'var(--border-color)'}`, 
+                  borderRadius: '8px', 
+                  backgroundColor: selectedJobFilter === job.postingId ? '#eff6ff' : 'white',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div style={{ fontSize: '0.75rem', color: 'var(--primary-blue)', marginBottom: '0.5rem', fontWeight: 600 }}>
+                  {job.company?.companyName} • Active
                 </div>
                 <h4 style={{ margin: '0 0 1rem 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.role}</h4>
                 <div style={{ display: 'flex', gap: '2rem', marginBottom: '1rem' }}>
                   <div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{Math.floor(Math.random() * 50) + 10}</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{applications.filter(a => a.posting?.postingId === job.postingId).length}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Applicants</div>
                   </div>
-                  <div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--success-green)' }}>{Math.floor(Math.random() * 10) + 2}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Top Match (90%+)</div>
-                  </div>
                 </div>
-                <a href="#" style={{ fontSize: '0.85rem', color: 'var(--primary-blue)', textDecoration: 'none', fontWeight: 500 }}>View Pipeline →</a>
+                <span style={{ fontSize: '0.85rem', color: 'var(--primary-blue)', fontWeight: 500 }}>View Applicants →</span>
               </div>
             ))
           )}
@@ -225,9 +247,9 @@ const RecruiterDashboard = () => {
         </div>
 
         <div className="candidate-list">
-          {applications.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No applications received yet.</div>
-          ) : applications.map(app => (
+          {applications.filter(app => selectedJobFilter ? app.posting?.postingId === selectedJobFilter : true).length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No applications found.</div>
+          ) : applications.filter(app => selectedJobFilter ? app.posting?.postingId === selectedJobFilter : true).map(app => (
             <div className="candidate-card" key={app.applicationId}>
               <div className="candidate-avatar" style={{ backgroundColor: 'var(--primary-blue)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 600 }}>
                 {app.jobSeeker?.name?.charAt(0) || 'U'}
@@ -247,17 +269,17 @@ const RecruiterDashboard = () => {
                   <button className="btn-outline" onClick={() => setSelectedProfile(app.jobSeeker)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>View Profile</button>
                 </div>
               </div>
-              <div className="candidate-actions">
+              <div className="candidate-actions" style={{ animation: 'fadeIn 0.5s ease-out' }}>
                 <button 
-                  className="btn-outline" 
-                  style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', color: '#ef4444', borderColor: '#ef4444' }}
+                  className="btn-outline btn-hover-effect" 
+                  style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', color: '#ef4444', borderColor: '#ef4444', transition: 'all 0.3s' }}
                   onClick={() => handleStatusUpdate(app.applicationId, 'REJECTED')}
                 >
                   <XCircle size={14}/> Reject
                 </button>
                 <button 
-                  className="btn-primary" 
-                  style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', backgroundColor: 'var(--success-green)' }}
+                  className="btn-primary btn-hover-effect" 
+                  style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', backgroundColor: 'var(--success-green)', transition: 'all 0.3s' }}
                   onClick={() => handleStatusUpdate(app.applicationId, 'HIRED')}
                 >
                   <CheckCircle size={14}/> Accept
@@ -293,7 +315,7 @@ const RecruiterDashboard = () => {
             </div>
 
             {selectedProfile.resumeUrl && (
-              <a href={`http://localhost:8080${selectedProfile.resumeUrl}`} target="_blank" rel="noreferrer" style={{ color: 'var(--primary-blue)', fontSize: '0.9rem', fontWeight: 600, textDecoration: 'none' }}>
+              <a href={`${import.meta.env.VITE_API_URL}${selectedProfile.resumeUrl}`} target="_blank" rel="noreferrer" style={{ color: 'var(--primary-blue)', fontSize: '0.9rem', fontWeight: 600, textDecoration: 'none' }}>
                 <ExternalLink size={14}/> View Attached Resume
               </a>
             )}

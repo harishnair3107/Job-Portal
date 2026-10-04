@@ -5,6 +5,7 @@ import JobSeekerDashboard from '../pages/JobSeekerDashboard';
 import RecruiterDashboard from '../pages/RecruiterDashboard';
 import CompleteProfile from '../pages/CompleteProfile';
 import FindJobs from '../pages/FindJobs';
+import AdminDashboard from '../pages/AdminDashboard';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
@@ -15,6 +16,7 @@ const ProtectedRoute = ({ children, allowedRole }) => {
     const payloadBase64 = token.split('.')[1];
     const decoded = JSON.parse(atob(payloadBase64));
     if (decoded.role !== allowedRole) {
+      if (decoded.role === 'ADMIN') return <Navigate to="/admin" replace />;
       return <Navigate to={`/${decoded.role === 'RECRUITERS' ? 'recruiter' : 'job-seeker'}/dashboard`} replace />;
     }
     return children;
@@ -34,6 +36,7 @@ const AppRoutes = () => {
         <Route path="/job-seeker/dashboard" element={<ProtectedRoute allowedRole="JOB_SEEKERS"><JobSeekerDashboard /></ProtectedRoute>} />
         <Route path="/job-seeker/profile" element={<ProtectedRoute allowedRole="JOB_SEEKERS"><CompleteProfile /></ProtectedRoute>} />
         <Route path="/recruiter/dashboard" element={<ProtectedRoute allowedRole="RECRUITERS"><RecruiterDashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute allowedRole="ADMIN"><AdminDashboard /></ProtectedRoute>} />
       </Routes>
       <Footer />
     </BrowserRouter>

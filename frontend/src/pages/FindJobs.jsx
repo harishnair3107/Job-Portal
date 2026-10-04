@@ -22,7 +22,7 @@ const FindJobs = () => {
   useEffect(() => {
     const fetchPostings = async () => {
       try {
-        const res = await fetch('http://localhost:8080/api/postings');
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/postings`);
         if (res.ok) {
           const data = await res.json();
           setPostings(data);

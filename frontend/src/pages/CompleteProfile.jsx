@@ -25,7 +25,7 @@ const CompleteProfile = () => {
       if (!token) return navigate('/login');
       
       try {
-        const res = await fetch('http://localhost:8080/api/job-seekers/me', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/job-seekers/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -92,7 +92,7 @@ const CompleteProfile = () => {
     if (formData.resume) formDataToSend.append('resume', formData.resume);
 
     try {
-      const res = await fetch('http://localhost:8080/api/job-seekers/me', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/job-seekers/me`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`

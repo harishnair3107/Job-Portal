@@ -14,6 +14,7 @@ import com.jobportal.job_portal.entities.AccountType;
 import com.jobportal.job_portal.entities.Recruiters;
 import com.jobportal.job_portal.entities.Status;
 import com.jobportal.job_portal.repositories.AccountRepository;
+import com.jobportal.job_portal.repositories.AdminRepository;
 import com.jobportal.job_portal.repositories.RecruiterRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.ArrayList;
@@ -37,6 +38,12 @@ public class DataSeeder implements CommandLineRunner {
     private RecruiterRepository recruiterRepository;
 
     @Autowired
+    private AdminRepository adminRepository;
+
+    @Autowired
+    private com.jobportal.job_portal.repositories.JobSeekerRepository jobSeekerRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Override
@@ -50,6 +57,9 @@ public class DataSeeder implements CommandLineRunner {
             } catch (Exception e) {
                 System.out.println("Could not delete existing data, appending instead.");
             }
+
+            String[] firstNames = {"James", "John", "Robert", "Michael", "William", "David", "Richard", "Charles", "Joseph", "Thomas", "Christopher", "Daniel", "Paul", "Mark", "Donald", "George", "Kenneth", "Steven", "Edward", "Brian", "Ronald", "Anthony", "Kevin", "Jason", "Matthew", "Gary", "Timothy", "Jose", "Larry", "Jeffrey", "Frank", "Scott", "Eric", "Stephen", "Andrew", "Raymond", "Gregory", "Joshua", "Jerry", "Dennis", "Walter", "Patrick", "Peter", "Harold", "Douglas", "Henry", "Carl", "Arthur", "Ryan", "Roger", "Sarah", "Jessica", "Emily", "Ashley", "Samantha", "Amanda", "Brittany", "Elizabeth", "Taylor", "Megan", "Hannah", "Kayla", "Lauren", "Stephanie", "Rachel", "Jennifer", "Nicole", "Amber", "Courtney", "Heather", "Melissa", "Danielle", "Haley", "Kelsey", "Victoria", "Morgan", "Chelsea", "Shelby", "Alyssa"};
+            String[] lastNames = {"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores", "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts"};
 
             String[] companyNames = {
                 "Google", "Microsoft", "Stripe", "Netflix", "Amazon", "Apple", "Meta", "Tesla", 
@@ -101,10 +111,33 @@ public class DataSeeder implements CommandLineRunner {
             };
 
             Random random = new Random();
+            
+            System.out.println("Seeding recruiters...");
+            List<Recruiters> allRecruiters = new ArrayList<>();
+            for (int i = 0; i < 40; i++) {
+                String fName = firstNames[random.nextInt(firstNames.length)];
+                String lName = lastNames[random.nextInt(lastNames.length)];
+                
+                Accounts account = new Accounts();
+                account.setEmail(fName.toLowerCase() + "." + lName.toLowerCase() + i + "@company.com");
+                account.setPassword(passwordEncoder.encode("password123"));
+                account.setAccountType(AccountType.RECRUITERS);
+                account.setStatus(Status.ACTIVE);
+                account = accountRepository.save(account);
+
+                Recruiters recruiter = new Recruiters();
+                recruiter.setName(fName + " " + lName);
+                recruiter.setCompany(savedCompanies.get(i % savedCompanies.size()));
+                recruiter.setAccount(account);
+                allRecruiters.add(recruiterRepository.save(recruiter));
+            }
+
             List<Posting> postings = new ArrayList<>();
 
             for (int i = 0; i < 150; i++) {
-                Company randomCompany = savedCompanies.get(random.nextInt(savedCompanies.size()));
+                Recruiters randomRecruiter = allRecruiters.get(random.nextInt(allRecruiters.size()));
+                Company randomCompany = randomRecruiter.getCompany();
+                
                 String randomRole = roles[random.nextInt(roles.length)];
                 String randomReqs = requirementsList[random.nextInt(requirementsList.length)];
                 String randomDesc = descriptions[random.nextInt(descriptions.length)];
@@ -115,30 +148,73 @@ public class DataSeeder implements CommandLineRunner {
                 posting.setJobDescription(randomDesc);
                 posting.setSalary(100000.0 + random.nextInt(150000));
                 posting.setCompany(randomCompany);
+                posting.setRecruiter(randomRecruiter);
                 postings.add(posting);
             }
 
             postingRepository.saveAll(postings);
-            System.out.println("Successfully seeded " + savedCompanies.size() + " companies and " + postings.size() + " job postings.");
+            System.out.println("Successfully seeded " + savedCompanies.size() + " companies, " + allRecruiters.size() + " recruiters, and " + postings.size() + " job postings.");
         }
 
+
         if (accountRepository.findByEmail("recruiter@test.com").isEmpty()) {
+            // Re-seed the specific recruiter test email just in case
+            Accounts testAcc = new Accounts();
+            testAcc.setEmail("recruiter@test.com");
+            testAcc.setPassword(passwordEncoder.encode("password123"));
+            testAcc.setAccountType(AccountType.RECRUITERS);
+            testAcc.setStatus(Status.ACTIVE);
+            testAcc = accountRepository.save(testAcc);
+
+            Recruiters testRec = new Recruiters();
+            testRec.setName("Test Recruiter");
+            List<Company> allCompanies = companyRepository.findAll();
+            if (!allCompanies.isEmpty()) {
+                testRec.setCompany(allCompanies.get(0));
+            }
+            testRec.setAccount(testAcc);
+            recruiterRepository.save(testRec);
+        }
+
+        if (accountRepository.findByEmail("admin@gmail.com").isEmpty()) {
             Accounts account = new Accounts();
-            account.setEmail("recruiter@test.com");
-            account.setPassword(passwordEncoder.encode("password123"));
-            account.setAccountType(AccountType.RECRUITERS);
+            account.setEmail("admin@gmail.com");
+            account.setPassword(passwordEncoder.encode("admin123"));
+            account.setAccountType(AccountType.ADMIN);
             account.setStatus(Status.ACTIVE);
             account = accountRepository.save(account);
 
-            Recruiters recruiter = new Recruiters();
-            recruiter.setName("Test Recruiter");
-            // Just use the first company if it exists, otherwise create a dummy
-            if (companyRepository.count() > 0) {
-                recruiter.setCompany(companyRepository.findAll().get(0));
+            com.jobportal.job_portal.entities.Admin admin = new com.jobportal.job_portal.entities.Admin();
+            admin.setName("Super Admin");
+            admin.setAccount(account);
+            adminRepository.save(admin);
+            System.out.println("Seeded admin: admin@gmail.com / admin123");
+        }
+
+        // Add missing Job Seeker seeds if empty
+        if (jobSeekerRepository.count() == 0) {
+            Random jsRandom = new Random();
+            System.out.println("Seeding job seekers...");
+            
+            String[] firstNames = {"James", "John", "Robert", "Michael", "William", "David", "Richard", "Charles", "Joseph", "Thomas", "Christopher", "Daniel", "Paul", "Mark", "Donald", "George", "Kenneth", "Steven", "Edward", "Brian", "Sarah", "Jessica", "Emily", "Ashley", "Samantha", "Amanda", "Brittany", "Elizabeth", "Taylor", "Megan"};
+            String[] lastNames = {"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin"};
+
+            for (int i = 0; i < 30; i++) {
+                String fName = firstNames[jsRandom.nextInt(firstNames.length)];
+                String lName = lastNames[jsRandom.nextInt(lastNames.length)];
+
+                Accounts jsAcc = new Accounts();
+                jsAcc.setEmail(fName.toLowerCase() + "." + lName.toLowerCase() + i + "@talent.com");
+                jsAcc.setPassword(passwordEncoder.encode("password123"));
+                jsAcc.setAccountType(AccountType.JOB_SEEKERS);
+                jsAcc.setStatus(Status.ACTIVE);
+                jsAcc = accountRepository.save(jsAcc);
+
+                com.jobportal.job_portal.entities.JobSeekers js = new com.jobportal.job_portal.entities.JobSeekers();
+                js.setName(fName + " " + lName);
+                js.setAccount(jsAcc);
+                jobSeekerRepository.save(js);
             }
-            recruiter.setAccount(account);
-            recruiterRepository.save(recruiter);
-            System.out.println("Seeded test recruiter: recruiter@test.com / password123");
         }
     }
 }

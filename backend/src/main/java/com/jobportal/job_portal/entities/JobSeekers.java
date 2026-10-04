@@ -104,4 +104,8 @@ public class JobSeekers {
     public void setAccount(Accounts account){
         this.account=account;
     }
+
+    public Accounts getAccount() {
+        return account;
+    }
 }

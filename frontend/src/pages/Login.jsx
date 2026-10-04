@@ -38,7 +38,7 @@ const Login = () => {
     if (authMode === 'signup' && profileMode === 'recruiter' && companyCode.length >= 3) {
       const fetchCompany = async () => {
         setIsFetchingCompany(true);
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+        const baseUrl = `${import.meta.env.VITE_API_URL}/api`;
         try {
           const res = await fetch(`${baseUrl}/companies/code/${companyCode}`);
           if (res.ok) {
@@ -65,7 +65,7 @@ const Login = () => {
     setErrorMsg('');
     setSuccessMsg('');
 
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const baseUrl = `${import.meta.env.VITE_API_URL}/api`;
     
     if (authMode === 'signup') {
       if (password !== confirmPassword) {
@@ -130,7 +130,9 @@ const Login = () => {
               const role = decoded.role;
               setSuccessMsg('Sign in successful!');
               
-              if (role === 'RECRUITERS') {
+              if (role === 'ADMIN') {
+                navigate('/admin');
+              } else if (role === 'RECRUITERS') {
                 navigate('/recruiter/dashboard');
               } else {
                 navigate('/job-seeker/dashboard');
